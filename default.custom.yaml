@@ -1,0 +1,7 @@
+patch:
+  menu:
+    page_size: 15
+  schema_list:
+    - {schema: rime_mint}           # 薄荷拼音
+  "switcher/hotkeys":
+    - "Control+grave"
