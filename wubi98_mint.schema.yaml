@@ -1,10 +1,7 @@
-# Rime schema settings
-# encoding: utf-8
-
 schema:
   schema_id: wubi98_mint
   name: "五笔98-五笔小筑"
-  version: "24.05.01"
+  version: "24.05.29"
   author:
     - 發明人 王永民
     - 修改者 yanhuacuo <https://github.com/yanhuacuo/98wubi>
@@ -14,37 +11,26 @@ schema:
     - 加入了五笔小筑的部分词库
     - 部分码表源自 yanhuacuo
   dependencies:
-    - melt_eng  # 英文方案
-    - rime_mint # 薄荷拼音
-
-key_binder:
-  import_preset: default
-  bindings:
-    - {accept: "Control+Shift+E", toggle: emoji_suggestion, when: always}
-    - {accept: "Control+Shift+1", toggle: transcription, when: has_menu}
-    - {accept: "Control+Shift+exclam", toggle: transcription, when: has_menu}
-    - {accept: bracketleft, send: Page_Up, when: paging}      # 使用`[`进行向上翻页（第一页时候无效）
-    - {accept: bracketright, send: Page_Down, when: has_menu} # 使用`]`进行向下翻页
-    - {accept: minus, send: Page_Up, when: paging}     # 使用`-`进行向上翻页（第一页时候无效）
-    - {accept: equal, send: Page_Down, when: has_menu} # 使用`=`进行向下翻页
-
+    - melt_eng            # 英文方案
+    - rime_mint           # 薄荷拼音
 
 switches:
   - name: ascii_mode
     reset: 0
     states: [ 中文, 英文 ]
   - name: emoji_suggestion
-    reset: 1
     states: [ "😣️","😁️"]
+    reset: 1
   - name: full_shape
     states: [ 半角, 全角 ]
+    reset: 0
   - name: transcription
-    reset: 0
     states: [ 简体 , 繁体 ]
-  - name: ascii_punct
-    states: [ "。，", "．，" ]
     reset: 0
-    
+  - name: ascii_punct
+    states: [ 。，, ．， ]
+    reset: 0
+
 engine:
   processors:
     - ascii_composer
@@ -58,28 +44,26 @@ engine:
   segmentors:
     - ascii_segmentor
     - matcher
-    - affix_segmentor@rime_mint   # 拼音
+    - affix_segmentor@rime_mint                # 拼音
     - abc_segmentor
     - punct_segmentor
     - fallback_segmentor
   translators:
-    - punct_translator                                   # ※ 轉換標點符號
-    - script_translator
+    - punct_translator
+    - table_translator
     - lua_translator@*mint_date_time_translator          # 时间、日期、星期、月份
     - lua_translator@*number_translator                  # 金额大小写
     - lua_translator@*chineseLunarCalendar_translator    # 农历
     - table_translator@melt_eng                          # 英文输入（作为子翻译器，优先级需要比原生的低）
     - reverse_lookup_translator@rime_mint                # 反查薄荷拼音
-    # - echo_translator                                   # ※ 没有候选词，返回字符
-    # - reverse_lookup_translator                         # 反查模块，多标签情况下去除
+    - lua_translator@*force_gc                           # 暴力GC，尝试解决小狼毫长期使用的卡顿
   filters:
-    - lua_filter@*autocap_filter           # 英文自动大写
-    - simplifier@emoji_suggestion          # Emoji
-    - lua_filter@*autocap_filter           # 英文自动大写
-    - simplifier@transcription_cc          # 简繁切换
-    - lua_filter@*reduce_english_filter    # 降低部分英语单词在候选项的位置
-    - uniquifier
-
+    - lua_filter@*autocap_filter              # 英文自动大写
+    - simplifier@emoji_suggestion             # Emoji
+    - lua_filter@*autocap_filter              # 英文自动大写
+    - simplifier@transcription_cc             # 简繁切换
+    - lua_filter@*reduce_english_filter       # 降低部分英语单词在候选项的位置
+    - uniquifier                              # 去重
 
 # 简繁切换
 transcription_cc:
@@ -107,9 +91,8 @@ emoji_suggestion:
 # 『留白』 不设置该选项，使用 reduce_english_filter 内全局设置内容
 # （匹配的是编码，不是单词）
 reduce_english_filter:
-  mode: all  # all | none | custom | 『留白』
-  idx: 2        # 降低到第 idx 个位置
-  # 自定义的单词列表，示例列表没有降低部分常用单词，如 and cat mail Mac but bad shit ……
+  mode: all
+  idx: 2
   words: [aid, ann,
   bail, bait, bam, band, bans, bat, bay, bend, bent, benz, bib, bid, bien, biz, boc, bop, bos, bud, buf,
   cab, cad, cain, cam, cans, cap, cas, cef, chad, chan, chap, chef, cher, chew, chic, chin, chip, chit, coup, cum, cunt, cur,
@@ -129,42 +112,37 @@ reduce_english_filter:
   wag, wand, womens, wap, wax, weir, won,
   yan, yen]
 
-
 # 中国农历配置
 chineseLunarCalendar_translator: lunar
 
-  
 translator:
-  dictionary: wubi98_mint           # 使用wubi98_mint词典
-  db_class: tabledb                 # 使用tabledb数据库
-  initial_quality: 1.2              # 初始质量为1.2
-  enable_charset_filter: false      # 禁用字符集过滤器
-  enable_sentence: false            # 禁用句子模式
-  enable_encoder: false             # 禁用编码器
-  encode_commit_history: false      # 禁用编码历史记录
-  max_phrase_length: 4              # 最大短语长度为4
-  enable_completion: false          # 禁用自动完成
-  enable_user_dict: false           # 禁用用户词典
-  disable_user_dict_for_patterns:   # 对于以下模式禁用用户词典
-    - "^z.*$"                       # 以字母"z"开头的任意字符串
+  dictionary: wubi98_mint
+  db_class: tabledb
+  initial_quality: 1.2                  # 初始质量为1.2
+  enable_charset_filter: false          # 开启字符集过滤
+  enable_sentence: false                # 句子输入模式
+  enable_encoder: false
+  encode_commit_history: false
+  enable_completion: false              # 是否显示编码未输入完整的词条
+  disable_user_dict_for_patterns:
+    - "^z.*$"
+  enable_user_dict: false           # 关闭用户词典，根据用户输入调频（默认开启，形码本身字重低或没有，理论上不需要调频）
 
-
+# 英文输入
 melt_eng:
   dictionary: melt_eng           # 英文词典
   enable_sentence: false         # 关闭自动造句
   enable_completion: false       # 关闭自动提示
   initial_quality: 0.8
 
-# 拼写设定
 speller:
-  # 如果不想让什么标点直接上屏，可以加在 alphabet，或者编辑标点符号为两个及以上的映射
-  alphabet: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA
   # 为了兼容 英文混输，取消自动上屏
   # max_code_length: 4                    # 四码上屏
   # auto_select: true                     # 四码唯一时，自动上屏
   # auto_clear: max_length                # 空码时自动清空
-  # 第一位<空格>是拼音之间的分隔符；第二位<'>表示可以手动输入单引号来分割字符。
-  delimiter: " `"
+  # 如果不想让什么标点直接上屏，可以加在 alphabet，或者编辑标点符号为两个及以上的映射
+  alphabet: zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA
+  delimiter: " `"  # 第一位<空格>是拼音之间的分隔符；第二位<'>表示可以手动输入单引号来分割拼音。
 
 rime_mint:
   tag: rime_mint
@@ -185,7 +163,7 @@ reverse_lookup:
 #    - rime_mint
 
 punctuator:
-  import_preset: symbols
+  import_preset: default
   # 定义部分半角字符
   half_shape:
       "#": "#"
@@ -215,4 +193,46 @@ recognizer:
     rime_mint: "^Up[a-z]*'?$"
     rmb: "^R[0-9]+[.]?[0-9]*"        # 响应 lua_translator@number_translator 脚本将自动获取第 2 个字符作为触发前缀
     gregorian_to_lunar: "^N[0-9]{1,8}"  # 响应 lua_translator@Chinese_lunar_calendar 公历转农历，输入 N20240115 得到「二〇二四年腊月初五」，脚本将自动获取第 2 个字符作为触发前缀
-    uppercase: ""
+    uppercase: ""  # 覆写默认的 uppercase 使其可以在输入大写后，输入数字
+
+
+key_binder:
+  import_preset: default
+  bindings:
+    - {accept: "Control+Shift+E", toggle: emoji_suggestion, when: always}
+    - {accept: "Control+Shift+1", toggle: transcription, when: has_menu}
+    - {accept: "Control+Shift+exclam", toggle: transcription, when: has_menu}
+    - {accept: bracketleft, send: Page_Up, when: paging}
+    - {accept: bracketright, send: Page_Down, when: has_menu}
+    - {accept: minus, send: Page_Up, when: paging}
+    - {accept: equal, send: Page_Down, when: has_menu}
+    - { when: composing, accept: Control+p, send: Up }
+    - { when: composing, accept: Control+n, send: Down }
+    - { when: composing, accept: Control+b, send: Left }
+    - { when: composing, accept: Control+f, send: Right }
+    - { when: composing, accept: Control+a, send: Home }
+    - { when: composing, accept: Control+e, send: End }
+    - { when: composing, accept: Control+d, send: Delete }
+    - { when: composing, accept: Control+k, send: Shift+Delete }
+    - { when: composing, accept: Control+g, send: Escape }
+    - { when: composing, accept: Alt+v, send: Page_Up }
+    - { when: composing, accept: Control+v, send: Page_Down }
+    - { when: composing, accept: ISO_Left_Tab, send: Shift+Left }
+    - { when: composing, accept: Shift+Tab, send: Shift+Left }
+    - { when: composing, accept: Tab, send: Shift+Right }
+    - { when: paging, accept: minus, send: Page_Up }
+    - { when: has_menu, accept: equal, send: Page_Down }
+    - { when: paging, accept: comma, send: Page_Up }
+    - { when: has_menu, accept: period, send: Page_Down }
+    - { when: predicting, accept: comma, send: comma }
+    - { when: predicting, accept: period, send: period }
+    - { when: always, accept: Control+Shift+1, select: .next }
+    - { when: always, accept: Control+Shift+2, toggle: ascii_mode }
+    - { when: always, accept: Control+Shift+3, toggle: full_shape }
+    - { when: always, accept: Control+Shift+4, toggle: simplification }
+    - { when: always, accept: Control+Shift+5, toggle: extended_charset }
+    - { when: always, accept: Shift+space, toggle: full_shape }
+    - { when: always, accept: Control+period, toggle: ascii_punct }
+menu:
+  # 候选词个数
+  page_size: 6

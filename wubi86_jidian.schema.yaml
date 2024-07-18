@@ -4,7 +4,7 @@
 schema:
   schema_id: wubi86_jidian
   name: "五笔86-极点五笔"
-  version: "24.05.01"
+  version: "24.05.29"
   author:
     - 创始人 王永民先生
     - 修改者 KyleBing <https://github.com/KyleBing/rime-wubi86-jidian>
@@ -16,28 +16,20 @@ schema:
     - melt_eng          # 英文方案
     - rime_mint         # 薄荷拼音
 
-key_binder:
-  import_preset: default
-  bindings:
-    - {accept: "Control+Shift+E", toggle: emoji_suggestion, when: always}
-    - {accept: "Control+Shift+1", toggle: transcription, when: has_menu}
-    - {accept: "Control+Shift+exclam", toggle: transcription, when: has_menu}
-    - {accept: bracketleft, send: Page_Up, when: paging}      # 使用`[`进行向上翻页（第一页时候无效）
-    - {accept: bracketright, send: Page_Down, when: has_menu} # 使用`]`进行向下翻页
-    - {accept: minus, send: Page_Up, when: paging}     # 使用`-`进行向上翻页（第一页时候无效）
-    - {accept: equal, send: Page_Down, when: has_menu} # 使用`=`进行向下翻页
-
 
 switches:
   - name: ascii_mode
     states: [ 中文, 英文 ]
+    reset: 0
   - name: emoji_suggestion
-    reset: 1
     states: [ "😣️","😁️"]
+    reset: 1
   - name: full_shape
     states: [ 半角, 全角 ]
+    reset: 0
   - name: transcription
     states: [ 简体 , 繁体 ]
+    reset: 0
   - name: ascii_punct
     states: [ "。，", "．，" ]
     reset: 0
@@ -62,13 +54,13 @@ engine:
     - fallback_segmentor
   translators:
     - punct_translator
-    - script_translator
+    - table_translator
     - lua_translator@*mint_date_time_translator          # 时间、日期、星期、月份
     - lua_translator@*number_translator                  # 金额大小写
     - lua_translator@*chineseLunarCalendar_translator    # 农历
     - table_translator@melt_eng                          # 英文输入（作为子翻译器，优先级需要比原生的低）
     - reverse_lookup_translator@rime_mint                # 反查薄荷拼音
-    - table_translator
+    - lua_translator@*force_gc                           # 暴力GC，尝试解决小狼毫长期使用的卡顿
   filters:
     - lua_filter@*autocap_filter              # 英文自动大写
     - simplifier@emoji_suggestion             # Emoji
@@ -140,6 +132,7 @@ translator:
   encode_commit_history: false          # 是否对已上屏词自动成词（仅 table_translator 有效）
   disable_user_dict_for_patterns:   # 对于以下模式禁用用户词典
     - "^z.*$"                       # 以字母"z"开头的任意字符串
+  enable_user_dict: false           # 关闭用户词典，根据用户输入调频（默认开启，形码本身字重低或没有，理论上不需要调频）
 
 # 英文输入
 melt_eng:
@@ -207,3 +200,48 @@ recognizer:
     rmb: "^R[0-9]+[.]?[0-9]*"        # 响应 lua_translator@number_translator 脚本将自动获取第 2 个字符作为触发前缀
     gregorian_to_lunar: "^N[0-9]{1,8}"  # 响应 lua_translator@Chinese_lunar_calendar 公历转农历，输入 N20240115 得到「二〇二四年腊月初五」，脚本将自动获取第 2 个字符作为触发前缀
     uppercase: ""  # 覆写默认的 uppercase 使其可以在输入大写后，输入数字
+
+key_binder:
+  import_preset: default
+  bindings:
+    - {accept: "Control+Shift+E", toggle: emoji_suggestion, when: always}
+    - {accept: "Control+Shift+1", toggle: transcription, when: has_menu}
+    - {accept: "Control+Shift+exclam", toggle: transcription, when: has_menu}
+    - {accept: bracketleft, send: Page_Up, when: paging}      # 使用`[`进行向上翻页（第一页时候无效）
+    - {accept: bracketright, send: Page_Down, when: has_menu} # 使用`]`进行向下翻页
+    - {accept: minus, send: Page_Up, when: paging}     # 使用`-`进行向上翻页（第一页时候无效）
+    - {accept: equal, send: Page_Down, when: has_menu} # 使用`=`进行向下翻页
+    # Emacs 风格的快捷键
+    - { when: composing, accept: Control+p, send: Up }     # composing 时,Control+p 等同于 Up 键
+    - { when: composing, accept: Control+n, send: Down }
+    - { when: composing, accept: Control+b, send: Left }
+    - { when: composing, accept: Control+f, send: Right }
+    - { when: composing, accept: Control+a, send: Home }
+    - { when: composing, accept: Control+e, send: End }
+    - { when: composing, accept: Control+d, send: Delete }
+    - { when: composing, accept: Control+k, send: Shift+Delete } # 删除到行尾
+    - { when: composing, accept: Control+g, send: Escape }       # 退出编码
+    - { when: composing, accept: Alt+v, send: Page_Up }          # 翻页
+    - { when: composing, accept: Control+v, send: Page_Down }
+    # 按词移动光标
+    - { when: composing, accept: ISO_Left_Tab, send: Shift+Left } # ISO_Left_Tab 是 Shift+Tab
+    - { when: composing, accept: Shift+Tab, send: Shift+Left }
+    - { when: composing, accept: Tab, send: Shift+Right }
+    # 翻页
+    - { when: paging, accept: minus, send: Page_Up }             # 编码窗口翻页
+    - { when: has_menu, accept: equal, send: Page_Down }
+    - { when: paging, accept: comma, send: Page_Up }             # 候选窗口翻页
+    - { when: has_menu, accept: period, send: Page_Down }
+    - { when: predicting, accept: comma, send: comma }           # 在预编码模式下,不当作快捷键
+    - { when: predicting, accept: period, send: period }
+    # 切换状态
+    - { when: always, accept: Control+Shift+1, select: .next }   # 切换输入方案
+    - { when: always, accept: Control+Shift+2, toggle: ascii_mode } # 切换中/西文模式
+    - { when: always, accept: Control+Shift+3, toggle: full_shape } # 切换全角/半角
+    - { when: always, accept: Control+Shift+4, toggle: simplification } # 切换简体/繁体
+    - { when: always, accept: Control+Shift+5, toggle: extended_charset } # 切换扩展字符
+    - { when: always, accept: Shift+space, toggle: full_shape } # 另一种切换全角/半角的方式
+    - { when: always, accept: Control+period, toggle: ascii_punct } # 切换中/西文标点
+menu:
+  # 候选词个数
+  page_size: 6
