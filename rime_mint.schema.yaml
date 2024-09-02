@@ -4,7 +4,7 @@
 schema:
   schema_id: rime_mint
   name: 薄荷拼音-全拼输入
-  version: "24.0.29"
+  version: "24.08.31"
   author:
     - mintimate < @Mintimate|https://www.mintimate.cn >
   description: |
@@ -17,6 +17,7 @@ schema:
       * opencc - 開放中文轉換
   dependencies:
     - radical_pinyin_flypy # 参考 https://github.com/mirtlecn/rime-radical-pinyin
+    - radical_pinyin # 参考 https://github.com/mirtlecn/rime-radical-pinyin
     - wubi98_mint # 98五笔库 https://github.com/yanhuacuo/98wubi-tables
     - stroke
     - melt_eng # 英文方案
@@ -330,7 +331,7 @@ recognizer:
   import_preset: default
   patterns:
     url: "^[a-z]+[.].+$"
-    punct: "^/([0-9]0?|[a-z]+)$"
+    punct: "^/([0-9]0?|[a-z]|[A-Z]+)$"
     wubi98_mint: "Uw[a-z]*'?$"
     stroke: "Ui[a-z]*'?$"
     radical_lookup: "Uu[a-z]*'?$"
